@@ -44,6 +44,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.asm.AsmVisitorWrapper.ForDeclaredMethods;
 import net.bytebuddy.description.type.TypeDefinition;
@@ -270,10 +272,13 @@ public abstract class TypeSpecificMarshaller<T extends Message> {
                 new DoWrite(
                     prototype, includingDefaultValueFields, printingEnumsAsInts, sortingMapKeys));
     try {
+      final ClassLoader classLoader = Optional.ofNullable(Thread.currentThread().getContextClassLoader())
+              .filter(contextClassLoader -> contextClassLoader.getClass().getSimpleName().equalsIgnoreCase("RestartClassLoader"))
+              .orElse(TypeSpecificMarshaller.class.getClassLoader());
       marshaller =
           buddy
               .make()
-              .load(TypeSpecificMarshaller.class.getClassLoader())
+              .load(classLoader)
               .getLoaded()
               .getConstructor(prototype.getClass())
               .newInstance(prototype);
